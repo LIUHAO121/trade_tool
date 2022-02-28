@@ -1,6 +1,8 @@
 from ast import expr_context
 import tushare as ts
 import time
+from tqdm import tqdm
+
 
 ts.set_token("d4aea91e37667a4b89b8e1a25217face35da82f49607df23e5cb4081")
 pro = ts.pro_api()
@@ -14,7 +16,7 @@ def get_daily(date,is_open):
                 return df
             except:
                 print("try {} time failed for {} data".format(i+1, date))
-                time.sleep(3)
+                time.sleep(5)
     else:
         return None
     
@@ -31,7 +33,7 @@ def get_multiple_daily(start_date,end_date):
     df_cal.to_csv("data/basic/trade_cal_{}_{}.csv".format(start_date,end_date))
 
     rows = len(df_cal)
-    for i in range(rows):
+    for i in tqdm(range(rows)):
         row = df_cal.iloc[i]
         date = row["cal_date"]
         is_open = row["is_open"]
@@ -41,6 +43,6 @@ def get_multiple_daily(start_date,end_date):
             print("successfully get {} data".format(date))
             
 if __name__ == "__main__":
-    start_date = "20220101"
+    start_date = "20000101"
     end_date = "20220220"
     get_multiple_daily(start_date=start_date,end_date=end_date)
