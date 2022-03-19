@@ -4,7 +4,7 @@ import time
 from tqdm import tqdm
 
 
-ts.set_token("d4aea91e37667a4b89b8e1a25217face35da82f49607df23e5cb4081")
+ts.set_token("ac33207e59b0c3702ee846ade596f11c88b793cd3cb28431467f9ec8")
 pro = ts.pro_api()
 
 
@@ -42,7 +42,12 @@ def get_multiple_daily(start_date,end_date):
             trade_daily.to_csv("data/origin_data/date_organized/{}.csv".format(date))
             print("successfully get {} data".format(date))
             
+def get_one_company_data(ts_code,start_date,end_date):
+    df = pro.daily(ts_code=ts_code, start_date=start_date, end_date=end_date)
+    df.to_csv("data/{}_{}_{}.csv".format(ts_code,start_date,end_date))
+
 if __name__ == "__main__":
     start_date = "20000101"
-    end_date = "20220220"
-    get_multiple_daily(start_date=start_date,end_date=end_date)
+    end_date = "20010220"
+    # get_multiple_daily(start_date=start_date,end_date=end_date)
+    get_one_company_data("000001.SZ",start_date=start_date,end_date=end_date)

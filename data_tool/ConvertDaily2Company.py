@@ -1,5 +1,9 @@
 import os
+from pickle import TRUE
 import pandas as pd
+from tqdm import tqdm
+from multiprocessing import Pool
+
 
 def get_all_date(daily_organized_root):
     file_names = os.listdir(daily_organized_root)
@@ -11,8 +15,9 @@ def get_all_date(daily_organized_root):
     return dates
 
 def get_all_company_code(daily_organized_root):
-    one_daily_name = os.listdir(daily_organized_root)[0]
-    daily_file = os.path.join(daily_organized_root,one_daily_name)
+    daily_names = os.listdir(daily_organized_root)
+    sort_daily_names = sorted(daily_names,reverse=True) # 降序
+    daily_file = os.path.join(daily_organized_root,sort_daily_names[0])
     daily_df = pd.read_csv(daily_file)
     company_codes = list(daily_df["ts_code"].values)
     return company_codes
@@ -36,7 +41,10 @@ def get_history_data_by_tscode(ts_code,daily_organized_root,company_organized_ro
     out_path = os.path.join(company_organized_root,"{}.csv".format(ts_code))
     df_datesort = df.sort_values(by="trade_date",ascending=False).reset_index(drop=True)
     df_datesort.to_csv(out_path)
-        
+  
+def map_fun(args):
+    st_code,daily_organized_root,company_organized_root = args   
+    get_history_data_by_tscode(st_code,daily_organized_root,company_organized_root)
         
 
 
@@ -46,6 +54,11 @@ if __name__ == "__main__":
     
     all_dates = get_all_date(daily_organized_root=daily_organized_root)
     st_codes = get_all_company_code(daily_organized_root=daily_organized_root)
+    
+    map_args = []
     for st_code in st_codes:
-        get_history_data_by_tscode(st_code,daily_organized_root,company_organized_root)
+        map_args.append([st_code,daily_organized_root,company_organized_root])
+    with Pool(20) as p:
+        p.map(map_fun,map_args)
+
     
