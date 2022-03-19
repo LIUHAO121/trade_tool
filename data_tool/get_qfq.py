@@ -31,7 +31,7 @@ def get_all_company_qfq(end_date):
     for row in tqdm(range(rows)):
         ts_code  = stock_basic_df.loc[row,"ts_code"]
         list_date = stock_basic_df.loc[row,"list_date"]
-        save_path = "data/origin_data/qfq/{}_{}_{}_qfq.csv".format(ts_code,list_date,end_date)
+        save_path = "data/qfq/{}_{}_{}_qfq.csv".format(ts_code,list_date,end_date)
         # if not os.path.exists(save_path):
         company_qfq = get_qfq(ts_code, str(list_date), end_date)
         if company_qfq is not None:
@@ -44,7 +44,7 @@ def get_all_company_qfq(end_date):
 if __name__ == "__main__":
     ts_code = '000001.SZ'
     start_date = '20000101'    
-    end_date = '20220305'
+    end_date = '20220319'
     get_all_company_qfq(end_date)
     
     
