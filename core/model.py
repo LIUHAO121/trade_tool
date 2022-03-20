@@ -44,8 +44,6 @@ class LSTMPred(nn.Module):
             x (Tensor):x.shape = (batch,seq_len,emb_dim)
         """
         x ,(h_n, c_n)= self.lstm(x.transpose(0,1))
-        print(x.shape)
-        print(h_n.shape)
         x = self.ln(x)
         x = x[-1] 
         out = self.fc(x)

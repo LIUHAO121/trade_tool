@@ -2,11 +2,14 @@
     "epoch": 100,
     "dataset": {
         "coloumns":["open","high","low","close","pre_close","pct_chg","vol","turnover_rate","volume_ratio"],
-        "seq_len":5,
-        "pred_len":2,
-        "train_dir": "/home/lhao/workspace/quant/trade_tool/data/train_qfq",
-        "test_dir":"/home/lhao/workspace/quant/trade_tool/data/origin_data/part_qfq",
-        "batch_size":32
+        "seq_len": 10,
+        "pred_len": 5,
+        "train_dir": "/home/lhao/workspace/quant/trade_tool/data/temp_train",
+        "test_dir": "/home/lhao/workspace/quant/trade_tool/data/test_qfq",
+        "batch_size": 32
+    },
+    "optimizer":{
+        "lr":0.001
     },
     "model":{
         "embed_dim":9,
@@ -14,5 +17,6 @@
         "rnn_layers":4,
         "output_size":3,
         "weight":""
-    }
+    },
+    "log_dir":"/home/lhao/workspace/quant/trade_tool/log"
 }

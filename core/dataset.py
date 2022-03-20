@@ -4,9 +4,12 @@ import torch.utils.data as data
 import pandas as pd
 import os
 import numpy as np
+from tqdm import tqdm
+import multiprocessing
+from multiprocessing import Pool
 
 class StockDataSet(data.Dataset):
-    def __init__(self,data_dir, coloumns, seq_len, pred_len):
+    def __init__(self,name, data_dir, coloumns, seq_len, pred_len):
         """
         Args:
             
@@ -15,6 +18,7 @@ class StockDataSet(data.Dataset):
             seq_len (int): 用过去多少天的数据来预测
             pred_len (int): 预测未来几天的收盘价
         """
+        self.name = name
         self.data_dir = data_dir
         self.seq_len  = seq_len
         self.pred_len = pred_len
@@ -24,31 +28,33 @@ class StockDataSet(data.Dataset):
         self.need_devide100_columns = ["pct_chg","turnover_rate"]
         self.columns = coloumns  
         self.column_index = {col:num for num,col in enumerate(self.columns)}
-        self.samples = []
-        self.norm_samples = []
-        self.labels = []
-        self.prepare_samples()
-        self.normalize_samples()
+        # self.norm_samples = []
+        self.norm_samples = multiprocessing.Manager().list()
+        self.prepare_samples()  # 将数据拆分成样本,并归一化
+        self.info()
         
     def info(self):
         data_len = len(self.norm_samples)
-        print("dataset sample num is {}".format(data_len))
-        label_count = {i:self.labels.count(i) for i in self.labels}
-        print("label distribute \n",label_count)
+        print("{} dataset sample num is {}".format(self.name, data_len))
+        all_labels = [sample[-1] for sample in self.norm_samples]
+        set_labels = set(all_labels)
+        label_count = {i:all_labels.count(i) for i in set_labels}
+        print(f"{self.name} dataset label distribute \n",label_count)
         
     
     def __getitem__(self, index):
         x,y = self.norm_samples[index]
-        x = torch.from_numpy(x)
+        x = torch.from_numpy(x).type(torch.float32)
         return x,y
     
     def __len__(self):
         return len(self.norm_samples)
     
     def prepare_samples(self):
-        print("preparing data ... ")
+        print(f"preparing {self.name} data ... ")
         csv_files = os.listdir(self.data_dir)
-        for file in csv_files:
+        samples = []
+        for file in tqdm(csv_files):
             if "csv" in file:
                 file_path = os.path.join(self.data_dir,file)
                 stock_df = pd.read_csv(file_path)
@@ -57,18 +63,16 @@ class StockDataSet(data.Dataset):
                 rows, _ = stock_df.shape
                 stock_df = stock_df.loc[:,self.columns]
                 for i in range(rows - self.sample_need_len):
-                    part_df = stock_df.iloc[i:i+self.sample_need_len]
-                    self.samples.append(part_df)
+                    sample = stock_df.iloc[i:i+self.sample_need_len]
+                    samples.append(sample)
+        self.multiprocess_normalize_samples(samples)            
         
         
-    def normalize_samples(self):
-        for sample in self.samples:
-            x,y = self.normalize_sample(sample)
-            # count use
-            self.labels.append(y)
-            self.norm_samples.append((x,y))
-    
-    
+    def multiprocess_normalize_samples(self,samples):
+        with Pool(40) as p:
+            p.map(self.normalize_sample,samples)
+
+        
     def normalize_sample(self,sample):
         seq_part = sample.iloc[:self.seq_len, :]
         pred_part = sample.iloc[-self.pred_len:, :]
@@ -92,7 +96,7 @@ class StockDataSet(data.Dataset):
         else:
             y = 2
         assert y is not None,"y is none"
-        return arr_seq, y
+        self.norm_samples.append((arr_seq, y))
         
 if __name__ == "__main__":
     dataset = StockDataSet(
