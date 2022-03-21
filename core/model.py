@@ -29,24 +29,24 @@ class LSTMPred(nn.Module):
         self.lstm = nn.LSTM(self.embed_dim,self.hidden_size,self.rnn_layers)
         self.ln = LayerNorm(self.hidden_size)
         
-        self.fc = nn.Sequential(
-            nn.Linear(self. hidden_size,64),
-            nn.ReLU(),
-            nn.Linear(64, self.output_size)
-        )
+        self.fc1 = nn.Linear(self.hidden_size, self.output_size)
+        
+        
+    def _init_weights(self, scope=1.):
+        self.fc1.weight.data.uniform_(-scope, scope)
+        self.fc1.bias.data.fill_(0)
         
        
         
     def forward(self,x):
         """
-
         Args:
             x (Tensor):x.shape = (batch,seq_len,emb_dim)
         """
         x ,(h_n, c_n)= self.lstm(x.transpose(0,1))
         x = self.ln(x)
         x = x[-1] 
-        out = self.fc(x)
+        out = self.fc1(x)
         return out
         
          
@@ -58,8 +58,8 @@ if __name__ == "__main__":
     output_size=3
     seq_len=5
     model = LSTMPred(embed_dim=embed_dim,hidden_size=hidden_size,rnn_layers=rnn_layers,output_size=output_size)
-    input = torch.ones(seq_len,batch,embed_dim)
+    input = torch.ones(batch,seq_len,embed_dim)
 
     output = model(input)
-    # print(output)
+    print(output.shape)
         

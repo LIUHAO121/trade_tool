@@ -7,6 +7,7 @@ import numpy as np
 from tqdm import tqdm
 import multiprocessing
 from multiprocessing import Pool
+import matplotlib.pyplot as plt
 
 class StockDataSet(data.Dataset):
     def __init__(self,name, data_dir, coloumns, seq_len, pred_len):
@@ -25,7 +26,7 @@ class StockDataSet(data.Dataset):
         self.sample_need_len = seq_len + pred_len
         self.need_open_normlize_columns = ["open","high","low","close","pre_close"]
         self.need_self_normlize_columns = ["vol"]
-        self.need_devide100_columns = ["pct_chg","turnover_rate"]
+        # self.need_devide100_columns = ["pct_chg","turnover_rate"]
         self.columns = coloumns  
         self.column_index = {col:num for num,col in enumerate(self.columns)}
         # self.norm_samples = []
@@ -74,35 +75,44 @@ class StockDataSet(data.Dataset):
 
         
     def normalize_sample(self,sample):
+        
         seq_part = sample.iloc[:self.seq_len, :]
         pred_part = sample.iloc[-self.pred_len:, :]
         arr_seq = np.array(seq_part)
         first_day_open_price = arr_seq[0, self.column_index["open"]]
-        first_day_self_norm_col_values = [arr_seq[0, self.column_index[col]] for col in self.need_self_normlize_columns]
+        first_day_self_norm_col_values = [arr_seq[0, self.column_index[col]] for col in self.need_self_normlize_columns if col in self.columns]
         for i in range(self.seq_len):
-            for col in self.need_devide100_columns:
-                arr_seq[i,self.column_index[col]] = arr_seq[i,self.column_index[col]] / 100
+            # for col in self.need_devide100_columns:
+            #     if col in self.columns:
+            #         arr_seq[i,self.column_index[col]] = arr_seq[i,self.column_index[col]] / 100
             for col in self.need_open_normlize_columns:
-                arr_seq[i,self.column_index[col]] = arr_seq[i,self.column_index[col]] / first_day_open_price - 1.0
+                if col in self.columns:
+                    arr_seq[i,self.column_index[col]] = arr_seq[i,self.column_index[col]] / first_day_open_price - 1.0
             for col in self.need_self_normlize_columns:
-                 arr_seq[i,self.column_index[col]] = arr_seq[i,self.column_index[col]] / first_day_self_norm_col_values[self.need_self_normlize_columns.index(col)] - 1.0
+                if col in self.columns:
+                    arr_seq[i,self.column_index[col]] = arr_seq[i,self.column_index[col]] / first_day_self_norm_col_values[self.need_self_normlize_columns.index(col)] - 1.0
         
-        y = None
+        y = 0
         price_change = (pred_part.iloc[-1, self.column_index["close"]] - pred_part.iloc[0, self.column_index["pre_close"]]) / pred_part.iloc[0, self.column_index["pre_close"]] 
-        if price_change <= -0.02:
+        if price_change <= 0.0:
             y = 0
-        elif price_change<=0.05 and price_change >= -0.02:
-            y = 1
         else:
-            y = 2
+            y = 1
+        # if price_change < -0.08 or price_change > 0.08:
+        #     plt.figure()
+        #     plt.plot(arr_seq)
+        #     plt.legend(self.columns)
+        #     plt.title(str(price_change))
+        #     plt.savefig("log/visualization/{}/{}.png".format(y,str(price_change)))
         assert y is not None,"y is none"
         self.norm_samples.append((arr_seq, y))
         
 if __name__ == "__main__":
     dataset = StockDataSet(
-                            data_dir = "data/origin_data/part_qfq",
+                            name="train",
+                            data_dir = "data/test_qfq",
                             coloumns = ["open","high","low","close","pre_close","pct_chg","vol","turnover_rate","volume_ratio"],
                             seq_len = 5,
-                            pred_len=2
+                            pred_len = 2
                            )
     dataset.info()

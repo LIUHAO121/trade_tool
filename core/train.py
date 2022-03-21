@@ -1,9 +1,14 @@
+import os
+import datetime as dt
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+from torch.optim import lr_scheduler
 import argparse
 from core import LSTMPred, StockDataSet ,load_json,setup_logging,get_current_logger
-import datetime as dt
+
+
+
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -34,7 +39,7 @@ def train(dataloader, model, loss_fn, optimizer,log):
         loss.backward()
         optimizer.step()
 
-        if batch % 1000 == 0:
+        if batch % 100 == 0:
             loss, current = loss.item(), batch * len(X)
             batch_correct = (pred.argmax(1) == y).type(torch.float).sum().item() / X.shape[0]
             
@@ -51,7 +56,7 @@ def test(dataloader, model, loss_fn,log):
             X, y = X.to(device), y.to(device)
             pred = model(X)
             test_loss += loss_fn(pred, y).item()
-            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+            correct += (pred.argmax(1) == y).type(torch.float).sum().item() 
     test_loss /= num_batches
     correct /= size
     log.info(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")     
@@ -82,7 +87,7 @@ def main():
     train_dataloader = DataLoader(
         dataset=train_dataset,
         batch_size = config["dataset"]["batch_size"],
-        shuffle = False,
+        shuffle = True,
         )
     
     test_dataset = StockDataSet(
@@ -106,16 +111,32 @@ def main():
         rnn_layers = config["model"]["rnn_layers"],
         output_size = config["model"]["output_size"]
     )
+    resume = config["model"]["resume"]
+    if resume:
+        log.info("resume model from {} ...".format(config["model"]["weight"]))
+        model.load_state_dict(torch.load(config["model"]["weight"]))
     model.to(device)
+    weight_dir = config["model"]["weight_dir"]
+    
+    
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=config["optimizer"]["lr"], momentum=0.9)
     
- 
-    epochs = config["epoch"]
-    for t in range(epochs):
+    num_epoch = config["epoch"]
+    # 更新学习率
+    scheduler = lr_scheduler.CosineAnnealingLR(
+        optimizer = optimizer,
+        T_max = num_epoch,
+        verbose=True,
+        )
+    
+    
+    for t in range(num_epoch):
         log.info(f"Epoch {t+1}\n-------------------------------")
         train(train_dataloader, model, loss_fn, optimizer,log)
         test(test_dataloader, model, loss_fn,log)
+        scheduler.step()
+        # torch.save(model.state_dict(), os.path.join(weight_dir,'model_e{}.pth'.format(t)))
     log.info("Done!")
         
     
