@@ -1,7 +1,7 @@
 import json
 import logging
 from pathlib import Path
-
+import matplotlib.pyplot as plt
 
 def load_json(json_path):
     with open(json_path, "r") as json_file:
@@ -35,3 +35,26 @@ def setup_logging(log_dir, log_level, trace_id):
  
 def get_current_logger():
     return logging.getLogger()   
+
+
+
+def plot_results_multiple(predicted_data, true_data, seq_len,model_tag):
+    fig = plt.figure(facecolor='white')
+    ax = fig.add_subplot(111)
+    ax.plot(true_data, label='True Data')
+	# Pad the list of predictions to shift it in the graph to it's correct start
+    for i, data in enumerate(predicted_data):
+        padding = [None for p in range((i) * seq_len)]
+        plt.plot(padding + data, label='Prediction')
+        # plt.legend()
+    plt.savefig("log/{}.png".format(model_tag))
+    
+def plot_results_point_by_point(predicted_data, true_data ,seq_len, model_tag):
+    fig = plt.figure(facecolor='white')
+    ax = fig.add_subplot(111)
+
+    ax.plot(true_data, label='True Data')
+	# Pad the list of predictions to shift it in the graph to it's correct start
+    plt.plot(predicted_data, label='Prediction')
+    plt.legend()
+    plt.savefig("log/{}.png".format(model_tag))

@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.optim import lr_scheduler
 import argparse
-from core import LSTMPred, StockDataSet ,load_json,setup_logging,get_current_logger
+from core import LSTMPred, StockClsDataSet ,StockRegDataSet ,load_json,setup_logging,get_current_logger,plot_results_multiple,plot_results_point_by_point
 
 
 
@@ -17,14 +17,24 @@ def parse_args():
 
     parser.add_argument('--cfg',
                         help='experiment configure file name',
-                        required=True,
+                        default="experiments/reg_config_close.json",
                         type=str)
     args = parser.parse_args()
 
     return args
 
 
-def train(dataloader, model, loss_fn, optimizer,log):
+LOSS_FUN_LIB = {
+            "classification":nn.CrossEntropyLoss(),
+            "regression":nn.MSELoss()
+               }
+
+DATASET_LIB = {
+    "classification": StockClsDataSet,
+    "regression":StockRegDataSet
+}
+
+def train(dataloader, model, loss_fn, optimizer, log, config):
     size = len(dataloader.dataset)
     model.train()
     for batch, (X, y) in enumerate(dataloader):
@@ -41,12 +51,14 @@ def train(dataloader, model, loss_fn, optimizer,log):
 
         if batch % 100 == 0:
             loss, current = loss.item(), batch * len(X)
-            batch_correct = (pred.argmax(1) == y).type(torch.float).sum().item() / X.shape[0]
-            
-            log.info(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}] batch Accuracy:{(100*batch_correct):>0.1f}%")
+            if config["task_type"] == "classification":
+                batch_correct = (pred.argmax(1) == y).type(torch.float).sum().item() / X.shape[0]
+                log.info(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}] batch Accuracy:{(100*batch_correct):>0.1f}%")
+            else:
+                log.info(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}] ")
             
       
-def test(dataloader, model, loss_fn,log):
+def test(dataloader, model, loss_fn,log, config):
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     model.eval()
@@ -56,14 +68,19 @@ def test(dataloader, model, loss_fn,log):
             X, y = X.to(device), y.to(device)
             pred = model(X)
             test_loss += loss_fn(pred, y).item()
-            correct += (pred.argmax(1) == y).type(torch.float).sum().item() 
+            if config["task_type"] == "classification":
+                correct += (pred.argmax(1) == y).type(torch.float).sum().item() 
     test_loss /= num_batches
-    correct /= size
-    log.info(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")     
+    if config["task_type"] == "classification":
+        correct /= size
+        log.info(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")     
+    else:
+       log.info(f"Test Error: \n Avg loss: {test_loss:>8f} \n")   
 
 def main():
     args = parse_args()
     config = load_json(args.cfg)
+    task_type = config["task_type"]
     
     setup_logging(
         log_dir = config["log_dir"],
@@ -75,27 +92,29 @@ def main():
         log.info(key)
         log.info(config[key])
  
-    
-    train_dataset = StockDataSet(
-        name = "train",
+    dataset_task = DATASET_LIB[task_type]
+    train_dataset = dataset_task(
+        dataset_type = "train",
         data_dir = config["dataset"]["train_dir"],
         coloumns = config["dataset"]["coloumns"],
         seq_len =  config["dataset"]["seq_len"],
-        pred_len = config["dataset"]["pred_len"]
+        pred_len = config["dataset"]["pred_len"],
+        split= config["dataset"]["train_test_split"]
                            )
 
     train_dataloader = DataLoader(
         dataset=train_dataset,
         batch_size = config["dataset"]["batch_size"],
-        shuffle = True,
+        shuffle = False,
         )
     
-    test_dataset = StockDataSet(
-        name = "test",
+    test_dataset = dataset_task(
+        dataset_type = "test",
         data_dir = config["dataset"]["test_dir"],
         coloumns = config["dataset"]["coloumns"],
         seq_len =  config["dataset"]["seq_len"],
-        pred_len = config["dataset"]["pred_len"]
+        pred_len = config["dataset"]["pred_len"],
+        split = config["dataset"]["train_test_split"]
                            )
   
     
@@ -119,25 +138,31 @@ def main():
     weight_dir = config["model"]["weight_dir"]
     
     
-    loss_fn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=config["optimizer"]["lr"], momentum=0.9)
+    loss_fn = LOSS_FUN_LIB[task_type]
+    # optimizer = torch.optim.SGD(model.parameters(), lr=config["optimizer"]["lr"], momentum=0.9)
+    optimizer = torch.optim.Adam(model.parameters(),lr=config["optimizer"]["lr"])
     
     num_epoch = config["epoch"]
     # 更新学习率
     scheduler = lr_scheduler.CosineAnnealingLR(
         optimizer = optimizer,
-        T_max = num_epoch,
-        verbose=True,
+        T_max = num_epoch
         )
-    
-    
+
     for t in range(num_epoch):
         log.info(f"Epoch {t+1}\n-------------------------------")
-        train(train_dataloader, model, loss_fn, optimizer,log)
-        test(test_dataloader, model, loss_fn,log)
-        scheduler.step()
+        train(train_dataloader, model, loss_fn, optimizer, log, config)
+        test(test_dataloader, model, loss_fn, log, config)
+        # scheduler.step()
         # torch.save(model.state_dict(), os.path.join(weight_dir,'model_e{}.pth'.format(t)))
+        
+    gts, preds = test_dataset.predict_sequences_multiple(model)
+    plot_results_multiple(preds,gts,seq_len=config["dataset"]["seq_len"],model_tag="seq_multiple")
+    
+    gts, preds = test_dataset.predict_point_by_point(model)
+    plot_results_point_by_point(preds, gts, seq_len=config["dataset"]["seq_len"], model_tag="point_by_point")
     log.info("Done!")
+    
         
     
         

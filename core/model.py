@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from torch.nn import init
 
 
 
@@ -17,6 +17,7 @@ class LayerNorm(nn.Module):
         sigma = torch.std(input, dim=-1, keepdim=True).clamp(min=self.eps)
         output = (input - mu) / sigma
         return output * self.weight.expand_as(output) + self.bias.expand_as(output)
+        # return output
 
 
 class LSTMPred(nn.Module):
@@ -26,25 +27,34 @@ class LSTMPred(nn.Module):
         self.hidden_size = hidden_size
         self.rnn_layers = rnn_layers
         self.output_size = output_size
-        self.lstm = nn.LSTM(self.embed_dim,self.hidden_size,self.rnn_layers)
-        self.ln = LayerNorm(self.hidden_size)
+        self.lstm1 = nn.LSTM(self.embed_dim,self.hidden_size,self.rnn_layers)
+        self.ln1 = LayerNorm(self.hidden_size)
+        self.relu1 = nn.ReLU(inplace=True)
         
+        # self.lstm2 = nn.LSTM(self.hidden_size,self.hidden_size)
+        # self.ln2 = LayerNorm(self.hidden_size)
+        # self.relu2 = nn.ReLU(inplace=True)
+        # self.lstm3 = nn.LSTM(self.hidden_size,self.hidden_size)
+        # self.ln3 = LayerNorm(self.hidden_size)
+        # self.relu3 = nn.ReLU(inplace=True)
+       
         self.fc1 = nn.Linear(self.hidden_size, self.output_size)
-        
+        # self._init_weights()
         
     def _init_weights(self, scope=1.):
         self.fc1.weight.data.uniform_(-scope, scope)
         self.fc1.bias.data.fill_(0)
-        
-       
         
     def forward(self,x):
         """
         Args:
             x (Tensor):x.shape = (batch,seq_len,emb_dim)
         """
-        x ,(h_n, c_n)= self.lstm(x.transpose(0,1))
-        x = self.ln(x)
+        x ,(h_n, c_n)= self.lstm1(x.transpose(0,1))
+        x = self.ln1(x)
+        # x, (h_n, c_n) = self.lstm2(x)
+        # x = self.ln2(x)
+       
         x = x[-1] 
         out = self.fc1(x)
         return out

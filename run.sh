@@ -1,3 +1,4 @@
 export PYTHONPATH=${PYTHONPATH}:.
-python core/train.py --cfg experiments/config.json
-# python core/train.py --cfg experiments/config_less_columns.json
+CUDA_VISIBLE_DEVICES=1 
+# python core/train.py --cfg experiments/reg_config.json
+python core/train.py --cfg experiments/reg_config_close.json

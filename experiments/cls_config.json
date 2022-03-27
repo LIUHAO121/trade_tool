@@ -1,12 +1,13 @@
 {
     "epoch": 200,
+    "task_type" : "classification",
     "dataset": {
         "coloumns":["open","high","low","close","pre_close","pct_chg","vol","turnover_rate","volume_ratio"],
         "seq_len": 50,
-        "pred_len": 5,
+        "pred_len": 25,
         "train_dir": "data/temp_train",
         "test_dir": "data/test_qfq",
-        "batch_size": 32
+        "batch_size": 8
     },
     "optimizer":{
         "lr":0.05

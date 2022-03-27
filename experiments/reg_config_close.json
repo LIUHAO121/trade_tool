@@ -1,9 +1,11 @@
 {
-    "epoch": 100,
+    "epoch": 80,
+    "task_type" : "regression",
     "dataset": {
-        "coloumns":["open","high","low","close","pre_close"],
-        "seq_len": 5,
-        "pred_len": 2,
+        "train_test_split":0.85,
+        "coloumns":["close"],
+        "seq_len": 49,
+        "pred_len": 1,
         "train_dir": "data/temp_train",
         "test_dir": "data/test_qfq",
         "batch_size": 32
@@ -12,10 +14,10 @@
         "lr":0.001
     },
     "model":{
-        "embed_dim":5,
-        "hidden_size":10,
+        "embed_dim":1,
+        "hidden_size":100,
         "rnn_layers":2,
-        "output_size":3,
+        "output_size":1,
         "weight":"",
         "weight_dir":"weights",
         "resume":0
