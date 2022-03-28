@@ -247,11 +247,13 @@ class StockRegDataSet(data.Dataset):
                     out = model(input_tensor).cpu()[0][0].item()
                     input_norm_sample = input_norm_sample[1:]
                     input_norm_sample = np.insert(input_norm_sample, self.seq_len - 1, out, axis=0)
+                    predicted_unnorm_values.append(out)
+                    ground_truth_values.append(self.stock_df.iloc[start_point + self.sample_need_len - 1 + j,self.column_index["close"]]/base_normalize_value - 1.0)
+                    
                     # real_out = (out + 1.0) * base_normalize_value
                     # predicted_unnorm_values.append(real_out)
                     # ground_truth_values.append(self.stock_df.iloc[start_point + self.sample_need_len + j - 1])
-                    predicted_unnorm_values.append(out)
-                    ground_truth_values.append(self.stock_df.iloc[start_point + self.sample_need_len - 1 + j,self.column_index["close"]]/base_normalize_value - 1.0)
+                    
                 prediction_seqs.append(predicted_unnorm_values)
     
         return  ground_truth_values,prediction_seqs
@@ -268,17 +270,18 @@ class StockRegDataSet(data.Dataset):
             for i in range(rows - self.sample_need_len):
                 predicted_unnorm_values = []
                 part_stock_df = self.stock_df.iloc[i :i  + self.seq_len ,:]
-                input_norm_sample = self.norm_sample_fun(part_stock_df)
                 base_normalize_value = part_stock_df.iloc[0,self.column_index["close"]]
-           
+                
+                input_norm_sample = self.norm_sample_fun(part_stock_df)
                 input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32).cuda()
                 out = model(input_tensor).cpu()[0][0].item()
+                predicts.append(out)
+                ground_truth_values.append(self.stock_df.iloc[i + self.sample_need_len - 1, self.column_index["close"]]/base_normalize_value - 1.0)
             
                 # real_out = (out + 1.0) * base_normalize_value
                 # predicts.append(real_out)
-                predicts.append(out)
                 # ground_truth_values.append(self.stock_df.iloc[i + self.sample_need_len - 1,self.column_index["close"]])  
-                ground_truth_values.append(self.stock_df.iloc[i + self.sample_need_len - 1, self.column_index["close"]]/base_normalize_value - 1.0)
+                
         return  ground_truth_values, predicts
             
 if __name__ == "__main__":

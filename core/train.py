@@ -153,7 +153,7 @@ def main():
         log.info(f"Epoch {t+1}\n-------------------------------")
         train(train_dataloader, model, loss_fn, optimizer, log, config)
         test(test_dataloader, model, loss_fn, log, config)
-        # scheduler.step()
+        scheduler.step()
         # torch.save(model.state_dict(), os.path.join(weight_dir,'model_e{}.pth'.format(t)))
         
     gts, preds = test_dataset.predict_sequences_multiple(model)
