@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.optim import lr_scheduler
 import argparse
-from core import LSTMPred, StockClsDataSet ,StockRegDataSet ,load_json,setup_logging,get_current_logger,plot_results_multiple,plot_results_point_by_point
+from core import LSTMPred, StockClsDataSet ,StockRegDataSet ,load_json,setup_logging,get_current_logger,plot_results_multiple,plot_results_point_by_point,plot_points,plot_results_real_multiple,plot_results_real_multiple_dense
 
 
 
@@ -105,7 +105,7 @@ def main():
     train_dataloader = DataLoader(
         dataset=train_dataset,
         batch_size = config["dataset"]["batch_size"],
-        shuffle = False,
+        shuffle = config["dataset"]["shuffle"],
         )
     
     test_dataset = dataset_task(
@@ -121,7 +121,7 @@ def main():
     test_dataloader = DataLoader(
         dataset=test_dataset,
         batch_size = config["dataset"]["batch_size"],
-        shuffle = True,
+        shuffle = config["dataset"]["shuffle"],
         )
     
     model = LSTMPred(
@@ -155,12 +155,26 @@ def main():
         test(test_dataloader, model, loss_fn, log, config)
         scheduler.step()
         # torch.save(model.state_dict(), os.path.join(weight_dir,'model_e{}.pth'.format(t)))
-        
-    gts, preds = test_dataset.predict_sequences_multiple(model)
-    plot_results_multiple(preds,gts,seq_len=config["dataset"]["seq_len"],model_tag="seq_multiple")
+    
+ 
+    real_values , gts, preds = test_dataset.predict_sequences_multiple(model)
+    plot_results_real_multiple(predicted_data = preds,
+                               real_values = real_values,
+                               seq_len = config["dataset"]["seq_len"],
+                               model_tag = "multiple_realvalue_pred")
+    
+    real_values, prediction_seqs = test_dataset.predict_sequences_multiple_dense(model,
+                                                                                 interval=config["plot_interval"])
+    plot_results_real_multiple_dense(predicted_data=prediction_seqs,
+                                     real_values=real_values, 
+                                     interval=config["plot_interval"], 
+                                     model_tag="multiply_dense")
     
     gts, preds = test_dataset.predict_point_by_point(model)
-    plot_results_point_by_point(preds, gts, seq_len=config["dataset"]["seq_len"], model_tag="point_by_point")
+    plot_results_point_by_point(predicted_data = preds,
+                                true_data = gts,
+                                seq_len=config["dataset"]["seq_len"],
+                                model_tag="point_by_point")
     log.info("Done!")
     
         

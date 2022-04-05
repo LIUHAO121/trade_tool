@@ -38,6 +38,32 @@ def get_current_logger():
 
 
 
+def plot_results_real_multiple(predicted_data,real_values,seq_len,model_tag):
+    fig = plt.figure(facecolor='white')
+    ax = fig.add_subplot(111)
+    ax.plot(real_values, label='True Data')
+    for i, data in enumerate(predicted_data):
+        
+        padding = [None for p in range((i) * seq_len)]
+        base_value_index = len(padding)
+        base_value = real_values[base_value_index]
+        adjust_data = [(i+1)*base_value for i in data]
+        plt.plot(padding + adjust_data, label='Prediction')
+    plt.savefig("log/{}.png".format(model_tag))
+    
+def plot_results_real_multiple_dense(predicted_data,real_values,interval,model_tag):
+    fig = plt.figure(facecolor='white')
+    ax = fig.add_subplot(111)
+    ax.plot(real_values, label='True Data')
+    for i, data in enumerate(predicted_data):
+        
+        padding = [None for p in range((i) * interval)]
+        base_value_index = len(padding)
+        base_value = real_values[base_value_index]
+        adjust_data = [(i+1)*base_value for i in data]
+        plt.plot(padding + adjust_data, label='Prediction')
+    plt.savefig("log/{}.png".format(model_tag))
+
 def plot_results_multiple(predicted_data, true_data, seq_len,model_tag):
     fig = plt.figure(facecolor='white')
     ax = fig.add_subplot(111)
@@ -56,5 +82,14 @@ def plot_results_point_by_point(predicted_data, true_data ,seq_len, model_tag):
     ax.plot(true_data, label='True Data')
 	# Pad the list of predictions to shift it in the graph to it's correct start
     plt.plot(predicted_data, label='Prediction')
+    plt.legend()
+    plt.savefig("log/{}.png".format(model_tag))
+    
+def plot_points(values,model_tag):
+    fig = plt.figure(facecolor='white')
+    ax = fig.add_subplot(111)
+
+	# Pad the list of predictions to shift it in the graph to it's correct start
+    plt.plot(values, label='real valuse')
     plt.legend()
     plt.savefig("log/{}.png".format(model_tag))

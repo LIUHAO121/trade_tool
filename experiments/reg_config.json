@@ -1,20 +1,22 @@
 {
-    "epoch": 200,
+    "epoch": 50,
     "task_type" : "regression",
     "dataset": {
+        "train_test_split":0.85,
         "coloumns":["open","high","low","close","pre_close","pct_chg","vol","turnover_rate","volume_ratio"],
-        "seq_len": 50,
-        "pred_len": 2,
+        "seq_len": 49,
+        "pred_len": 1,
         "train_dir": "data/temp_train",
         "test_dir": "data/test_qfq",
-        "batch_size": 8
+        "batch_size": 32,
+        "shuffle": false
     },
     "optimizer":{
-        "lr":0.05
+        "lr":0.001
     },
     "model":{
         "embed_dim":9,
-        "hidden_size":18,
+        "hidden_size":100,
         "rnn_layers":2,
         "output_size":1,
         "weight":"",
