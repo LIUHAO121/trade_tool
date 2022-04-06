@@ -359,6 +359,24 @@ class StockRegDataSet(data.Dataset):
                 predicts.append(out)
                 ground_truth_values.append(y)
         return  ground_truth_values, predicts
+    
+    def test_predict(self,model):
+        print("predict test predict ... ")
+        model.eval()
+        model.cuda()
+        part_df = self.stock_df.iloc[-self.seq_len:,:]
+        input_norm_sample,y = self.norm_sample_fun(part_df)
+        predict_out = []
+        for i in range(self.seq_len):
+            input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32).cuda()
+            out = model(input_tensor).cpu()[0][0].item()
+            out = exp_decode(out)
+            input_norm_sample = input_norm_sample[1:]
+            insert_index = self.seq_len - 1
+            input_norm_sample = np.insert(input_norm_sample, insert_index, out, axis=0) 
+            predict_out.append(out)
+        past_real_values = list(self.stock_df.iloc[-self.seq_len*4:,self.column_index["close"]].values)
+        return past_real_values, predict_out
             
 if __name__ == "__main__":
     dataset = StockClsDataSet(

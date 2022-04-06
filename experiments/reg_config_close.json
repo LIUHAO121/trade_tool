@@ -1,12 +1,12 @@
 {
-    "epoch": 10,
+    "epoch": 3,
     "task_type" : "regression",
     "dataset": {
         "train_test_split":0.90,
         "coloumns":["close"],
         "seq_len": 49,
         "pred_len": 1,
-        "train_dir": "data/temp_train",
+        "train_dir": "data/train_qfq",
         "test_dir": "data/test_qfq",
         "batch_size": 32,
         "shuffle": false
@@ -20,7 +20,7 @@
         "hidden_size":100,
         "rnn_layers":2,
         "output_size":1,
-        "weight":"",
+        "checkpoint":"",
         "weight_dir":"weights",
         "resume":0
     },

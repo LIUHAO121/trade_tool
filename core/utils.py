@@ -37,6 +37,20 @@ def get_current_logger():
     return logging.getLogger()   
 
 
+def plot_test_out(predicted_data,real_values,seq_len,model_tag):
+    fig = plt.figure(facecolor='white')
+    ax = fig.add_subplot(111)
+    ax.plot(real_values, label='True Data')
+    
+    padding = [None for p in real_values]
+    
+    base_value = real_values[-seq_len]
+    base_values = real_values[-seq_len:]
+    adjust_predict = [(i+1)*base_value for i in predicted_data]
+    plt.plot(padding + adjust_predict, label='Prediction')
+    
+    plt.savefig("log/{}.png".format(model_tag))
+    
 
 def plot_results_real_multiple(predicted_data,real_values,seq_len,model_tag):
     fig = plt.figure(facecolor='white')

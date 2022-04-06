@@ -5,7 +5,7 @@
         "coloumns":["open","high","low","close","pre_close","pct_chg","vol","turnover_rate","volume_ratio"],
         "seq_len": 50,
         "pred_len": 25,
-        "train_dir": "data/temp_train",
+        "train_dir": "data/train_qfq",
         "test_dir": "data/test_qfq",
         "batch_size": 8
     },

@@ -6,7 +6,7 @@
         "coloumns":["open","high","low","close"],
         "seq_len": 49,
         "pred_len": 1,
-        "train_dir": "data/temp_train",
+        "train_dir": "data/train_qfq",
         "test_dir": "data/test_qfq",
         "batch_size": 32,
         "shuffle": false
