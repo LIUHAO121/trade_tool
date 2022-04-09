@@ -11,18 +11,18 @@ import matplotlib.pyplot as plt
 
 import math
 
-def log_encode(y):
-    y = max(y,-0.99)
-    return math.log(y + 1)
-
-def exp_decode(predict):
-    return math.exp(predict) - 1
-
 # def log_encode(y):
-#     return y
+#     y = max(y,-0.99)
+#     return math.log(y + 1)
 
 # def exp_decode(predict):
-#     return predict
+#     return math.exp(predict) - 1
+
+def log_encode(y):
+    return y
+
+def exp_decode(predict):
+    return predict
     
 
 class StockClsDataSet(data.Dataset):
@@ -163,7 +163,8 @@ class StockRegDataSet(data.Dataset):
     def __getitem__(self, index):
         x,y = self.norm_samples[index]
         x = torch.from_numpy(x).type(torch.float32)
-        y = torch.tensor(y).type(torch.float32)
+        # 当y为一个单独的元素时，把y放到列表里，保证shape为（batch，1）或（batch，n），而不是（batch，）,交叉墒的y的shape可以是这样
+        y = torch.tensor([y]).type(torch.float32) 
         return x,y
     
     def __len__(self):
@@ -223,23 +224,7 @@ class StockRegDataSet(data.Dataset):
 
         self.norm_samples.append((x, y))
         
-    def normalize_sample2(self,sample):
-        # 以预测的长度为周期来计算y
-        arr_seq = np.array(sample)
-        arr_seq_cp = arr_seq.copy()
 
-        for i in range(self.seq_len - 1):
-            for col in self.need_open_normlize_columns:
-                if col in self.columns:
-                    arr_seq_cp[i + 1,self.column_index[col]] = arr_seq[i+1,self.column_index[col]] / arr_seq[i,self.column_index[col]] - 1.0
-            
-        x = arr_seq_cp[1:self.seq_len]
-        y = arr_seq[self.sample_need_len - 1,self.column_index["close"]] / (arr_seq[self.seq_len - 1,self.column_index["close"]] + 1e-5) - 1.0
-        
-        y = log_encode(y)
-
-        self.norm_samples.append((x, y))
-        
     def norm_sample_fun(self,sample):
         rows,_ = sample.shape
         arr_seq = np.array(sample)
@@ -256,56 +241,8 @@ class StockRegDataSet(data.Dataset):
         y = arr_seq[-1,self.column_index["close"]]
         y = log_encode(y)
         return x,y
-    
-    def norm_sample_fun2(self,sample):
-        arr_seq = np.array(sample)
-        arr_seq_cp = arr_seq.copy()
 
-        for i in range(self.seq_len - 1):
-            for col in self.need_open_normlize_columns:
-                if col in self.columns:
-                    arr_seq_cp[i + 1,self.column_index[col]] = arr_seq[i+1,self.column_index[col]] / arr_seq[i,self.column_index[col]] - 1.0
-            
-        x = arr_seq_cp[1:self.seq_len]
-        y = arr_seq[self.sample_need_len - 1,self.column_index["close"]] / arr_seq[self.seq_len - 1,self.column_index["close"]] - 1.0
-        y = log_encode(y)
-
-        return x,y
     
-    
-    def predict_sequences_multiple(self,model):
-        print("predict sequences multiple ... ")
-        model.eval()
-        model.cuda()
-        rows,_ = self.stock_df.shape
-        pred_nums = int(rows/self.seq_len)
-        prediction_seqs = []
-        gt_values = []
-        real_values = []
-        with torch.no_grad():
-            for i in range(pred_nums-1):
-                predicted_unnorm_values = []
-                start_point = i * self.seq_len
-                part_stock_df = self.stock_df.iloc[start_point:start_point + self.sample_need_len, :]
-                input_norm_sample,y = self.norm_sample_fun(part_stock_df)
-                
-                for j in range(self.seq_len):
-                    base_normalize_value = self.stock_df.iloc[start_point + j, self.column_index["close"]]
-                    input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32).cuda()
-                    out = model(input_tensor).cpu()[0][0].item()
-                    
-                    out = exp_decode(out)
-                    
-                    input_norm_sample = input_norm_sample[1:]
-                    
-                    insert_index = self.seq_len - 1
-                    input_norm_sample = np.insert(input_norm_sample, insert_index, out, axis=0) 
-                    predicted_unnorm_values.append(out)
-                    gt_values.append(self.stock_df.iloc[start_point + self.sample_need_len - 1 + j,self.column_index["close"]]/base_normalize_value - 1.0)
-                    real_values.append(self.stock_df.iloc[start_point + self.sample_need_len - 1 + j,self.column_index["close"]])
-                prediction_seqs.append(predicted_unnorm_values)
-    
-        return  real_values,gt_values,prediction_seqs
     
     def predict_sequences_multiple_dense(self,model,interval):
         print("predict sequences multiple dense ... ")
@@ -315,27 +252,21 @@ class StockRegDataSet(data.Dataset):
         pred_nums = int((rows - self.sample_need_len)/interval) + 1
         prediction_seqs = []
         gt_values = []
-        real_values = []
+        real_values = list(self.stock_df.iloc[:,self.column_index["close"]].values)
         with torch.no_grad():
             for i in range(pred_nums - 1):
                 predicted_unnorm_values = []
                 start_point = i * interval
                 part_stock_df = self.stock_df.iloc[start_point:start_point + self.sample_need_len, :]
-                input_norm_sample,y = self.norm_sample_fun(part_stock_df)
-                for k in range(interval):
-                    real_values.append(self.stock_df.iloc[start_point + self.sample_need_len - 1 + k,self.column_index["close"]])
-                
-                for j in range(self.seq_len):
-                    base_normalize_value = self.stock_df.iloc[start_point + j, self.column_index["close"]]
+                input_norm_sample,y = self.norm_sample_fun(part_stock_df)     
+                for j in range(self.seq_len):                 
                     input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32).cuda()
-                    out = model(input_tensor).cpu()[0][0].item()
                     
+                    out = model(input_tensor).cpu()[0][0].item()
                     out = exp_decode(out)
                     
                     input_norm_sample = input_norm_sample[1:]
-                    
-                    insert_index = self.seq_len - 1
-                    input_norm_sample = np.insert(input_norm_sample, insert_index, out, axis=0) 
+                    input_norm_sample = np.insert(input_norm_sample, self.seq_len - 1, out, axis=0) 
                     predicted_unnorm_values.append(out)
                 prediction_seqs.append(predicted_unnorm_values)
     
@@ -377,6 +308,33 @@ class StockRegDataSet(data.Dataset):
             predict_out.append(out)
         past_real_values = list(self.stock_df.iloc[-self.seq_len*4:,self.column_index["close"]].values)
         return past_real_values, predict_out
+    
+    def test_predict_dense(self,model,interval,num_interval):
+        """
+        interval: 间隔多久预测一次
+        num_seq_len:  预测多少次
+        """
+        print("predict test predict ... ")
+        model.eval()
+        model.cuda()
+        need_history_df_len = self.seq_len + interval * (num_interval - 1)
+        need_history_df = self.stock_df.iloc[-need_history_df_len:,:]
+        predict_outs = []
+        for j in range(num_interval):
+            part_df = need_history_df.iloc[j*interval:j*interval+self.seq_len,:]
+            input_norm_sample,y = self.norm_sample_fun(part_df)
+            predict_out = []
+            for i in range(self.seq_len):
+                input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32).cuda()
+                out = model(input_tensor).cpu()[0][0].item()
+                out = exp_decode(out)
+                input_norm_sample = input_norm_sample[1:]
+                insert_index = self.seq_len - 1
+                input_norm_sample = np.insert(input_norm_sample, insert_index, out, axis=0) 
+                predict_out.append(out)
+            predict_outs.append(predict_out)
+        past_real_values = list(need_history_df.iloc[:,self.column_index["close"]].values)
+        return past_real_values, predict_outs
             
 if __name__ == "__main__":
     dataset = StockClsDataSet(

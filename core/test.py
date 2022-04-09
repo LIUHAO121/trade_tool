@@ -8,7 +8,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.optim import lr_scheduler
 from data_tool import get_qfq
-from core import LSTMPred, StockClsDataSet ,StockRegDataSet ,load_json, setup_logging, get_current_logger,plot_test_out
+from core import LSTMPred, StockClsDataSet ,StockRegDataSet ,load_json, setup_logging, get_current_logger,plot_test_out,plot_multi_test_out
 
 
 
@@ -64,17 +64,18 @@ def train(dataloader, model, loss_fn, optimizer, log, config):
                 log.info(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}] ")
  
  
-def main():
-    end_date = '20220410'
-    # 1 获取股票编码和上市日期
-    company_name = "科大讯飞"
+def company_train_and_predict(company_name, end_date):
     stock_basic = pd.read_csv("data/stock_basic.csv") 
     ts_code = stock_basic[stock_basic["name"]==company_name]["ts_code"].values[0]
     list_date = stock_basic[stock_basic["name"]==company_name]["list_date"].values[0]
     
-    # 2 获取股票数据并保存
+    # 2 删除旧数据，获取新股票数据并保存
+    data_dir = "data/test_train"
+    for csv_file in os.listdir(data_dir):
+        csv_path = os.path.join(data_dir,csv_file)
+        os.remove(csv_path)
     train_df = get_qfq(ts_code = ts_code, start_date=str(list_date), end_date=end_date)
-    train_df.to_csv("data/test_train/{}_{}.csv".format(ts_code,end_date))
+    train_df.to_csv("{}/{}_{}.csv".format(data_dir,ts_code,end_date))
     
     # 3 训练并保存模型
     args = parse_args()
@@ -84,7 +85,7 @@ def main():
 
     log = logging.getLogger(__name__)
     log.setLevel(level = logging.INFO)
-    handler = logging.FileHandler("{}/{}.txt".format(config["log_dir"], dt.datetime.now().strftime('%Y%m%d-%H%M%S')))
+    handler = logging.FileHandler("{}/log/{}_{}.txt".format(config["log_dir"],company_name, dt.datetime.now().strftime('%Y%m%d-%H%M%S')))
     handler.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
@@ -97,11 +98,11 @@ def main():
     dataset_task = DATASET_LIB[task_type]
     train_dataset = dataset_task(
         dataset_type = "train",
-        data_dir = config["dataset"]["train_dir"],
+        data_dir = "data/test_train",
         coloumns = config["dataset"]["coloumns"],
         seq_len =  config["dataset"]["seq_len"],
         pred_len = config["dataset"]["pred_len"],
-        split= 1
+        split= 1.0
                            )
     train_dataloader = DataLoader(
         dataset=train_dataset,
@@ -140,12 +141,24 @@ def main():
         model.load_state_dict(torch.load(config["model"]["checkpoint"]))
     
     # 4 预测未来走势并可视化
-    past_real_values, future_predicted = train_dataset.test_predict(model)
-    print(future_predicted)
-    plot_test_out(predicted_data=future_predicted,
-                  real_values=past_real_values,
-                  seq_len=config["dataset"]["seq_len"],
-                  model_tag="{}_future_predict".format(ts_code))
+ 
+    interval = 15
+    past_real_values, future_predicted_multi = train_dataset.test_predict_dense(model=model,
+                                                                                interval=interval,
+                                                                                num_interval=30)
+    plot_multi_test_out(predicted_datas=future_predicted_multi,
+                        real_values=past_real_values,
+                        interval=interval,
+                        model_tag="{}_future_predict_dense".format(company_name))
+ 
+def main():
+    end_date = '20220410'
+    # 1 获取股票编码和上市日期
+    company_names = ["科大讯飞","海康威视","汉王科技"]
+    for name in company_names:
+        print("training {}".format(name))
+        company_train_and_predict(company_name=name, end_date=end_date)
+    
     
         
 if __name__ == "__main__":

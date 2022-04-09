@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.optim import lr_scheduler
 import argparse
-from core import LSTMPred, StockClsDataSet ,StockRegDataSet ,load_json,setup_logging,get_current_logger,plot_results_multiple,plot_results_point_by_point,plot_points,plot_results_real_multiple,plot_results_real_multiple_dense
+from core import LSTMPred, StockClsDataSet ,StockRegDataSet ,load_json,setup_logging,get_current_logger,plot_results_multiple,plot_results_point_by_point,plot_points,plot_results_real_multiple_dense
 
 
 
@@ -49,7 +49,7 @@ def train(dataloader, model, loss_fn, optimizer, log, config):
         loss.backward()
         optimizer.step()
 
-        if batch % 100 == 0:
+        if batch % 50 == 0:
             loss, current = loss.item(), batch * len(X)
             if config["task_type"] == "classification":
                 batch_correct = (pred.argmax(1) == y).type(torch.float).sum().item() / X.shape[0]
@@ -157,12 +157,7 @@ def main():
         # torch.save(model.state_dict(), os.path.join(weight_dir,'model_e{}.pth'.format(t)))
     
  
-    real_values , gts, preds = test_dataset.predict_sequences_multiple(model)
-    plot_results_real_multiple(predicted_data = preds,
-                               real_values = real_values,
-                               seq_len = config["dataset"]["seq_len"],
-                               model_tag = "multiple_realvalue_pred")
-    
+
     real_values, prediction_seqs = test_dataset.predict_sequences_multiple_dense(model,
                                                                                  interval=config["plot_interval"])
     plot_results_real_multiple_dense(predicted_data=prediction_seqs,

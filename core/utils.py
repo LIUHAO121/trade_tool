@@ -52,18 +52,23 @@ def plot_test_out(predicted_data,real_values,seq_len,model_tag):
     plt.savefig("log/{}.png".format(model_tag))
     
 
-def plot_results_real_multiple(predicted_data,real_values,seq_len,model_tag):
+def plot_multi_test_out(predicted_datas,real_values,interval,model_tag):
     fig = plt.figure(facecolor='white')
     ax = fig.add_subplot(111)
     ax.plot(real_values, label='True Data')
-    for i, data in enumerate(predicted_data):
+    
+    for i,predicted_data in enumerate(predicted_datas):
+        padding = [None for j in range(interval*i+len(predicted_data))]
+    
+        base_value = real_values[i * interval]
         
-        padding = [None for p in range((i) * seq_len)]
-        base_value_index = len(padding)
-        base_value = real_values[base_value_index]
-        adjust_data = [(i+1)*base_value for i in data]
-        plt.plot(padding + adjust_data, label='Prediction')
-    plt.savefig("log/{}.png".format(model_tag))
+        
+        adjust_predict = [(i+1)*base_value for i in predicted_data]
+        plt.plot(padding + adjust_predict, label='Prediction')
+    
+    plt.savefig("log/img/{}.png".format(model_tag))
+    
+
     
 def plot_results_real_multiple_dense(predicted_data,real_values,interval,model_tag):
     fig = plt.figure(facecolor='white')
@@ -71,8 +76,8 @@ def plot_results_real_multiple_dense(predicted_data,real_values,interval,model_t
     ax.plot(real_values, label='True Data')
     for i, data in enumerate(predicted_data):
         
-        padding = [None for p in range((i) * interval)]
-        base_value_index = len(padding)
+        padding = [None for p1 in range((i) * interval)] + [None for p2 in data]
+        base_value_index = interval * i
         base_value = real_values[base_value_index]
         adjust_data = [(i+1)*base_value for i in data]
         plt.plot(padding + adjust_data, label='Prediction')
