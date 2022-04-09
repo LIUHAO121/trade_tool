@@ -1,7 +1,15 @@
 # trade_tool
 
-### run
+train
 
 ```shell
-bash run.sh
+bash train.sh
+```
+
+
+
+test
+
+```shell
+bash test.sh
 ```
