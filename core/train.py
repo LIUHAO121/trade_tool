@@ -153,7 +153,7 @@ def main():
         log.info(f"Epoch {t+1}\n-------------------------------")
         train(train_dataloader, model, loss_fn, optimizer, log, config)
         test(test_dataloader, model, loss_fn, log, config)
-        # scheduler.step()
+        scheduler.step()
         # torch.save(model.state_dict(), os.path.join(weight_dir,'model_e{}.pth'.format(t)))
     
  
@@ -170,6 +170,11 @@ def main():
                                 true_data = gts,
                                 seq_len=config["dataset"]["seq_len"],
                                 model_tag="point_by_point")
+    
+    acc,corr,r_sq = test_dataset.eval_model(model=model)
+    log.info("acc is {:.2f}%, ".format(acc*100))
+    log.info("pearson Correlation coefficient {:.3f}, ".format(corr))
+    log.info("R square {:.3f}, ".format(r_sq))
     log.info("Done!")
     
         

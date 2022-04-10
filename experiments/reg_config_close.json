@@ -1,5 +1,5 @@
 {
-    "epoch":2,
+    "epoch":15,
     "task_type" : "regression",
     "dataset": {
         "train_test_split":0.85,

@@ -154,6 +154,7 @@ class StockRegDataSet(data.Dataset):
         self.column_index = {col:num for num,col in enumerate(self.columns)}
         self.norm_samples = multiprocessing.Manager().list()
         self.prepare_samples()  # 将数据拆分成样本,并归一化
+        self.info()
         
     def info(self):
         data_len = len(self.norm_samples)
@@ -207,6 +208,7 @@ class StockRegDataSet(data.Dataset):
     def normalize_sample(self,sample):
         # 以样本的长度为周期计算y
         arr_seq = np.array(sample)
+        arr_copy = arr_seq.copy()
         first_day_open_price = arr_seq[0, self.column_index["close"]]
         first_day_self_norm_col_values = [arr_seq[0, self.column_index[col]] for col in self.need_self_normlize_columns if col in self.columns]
         for i in range(self.sample_need_len):
@@ -219,15 +221,16 @@ class StockRegDataSet(data.Dataset):
         
         x = arr_seq[:self.seq_len]
         y = arr_seq[-1,self.column_index["close"]]
-        
+        # y = arr_copy[-1,self.column_index["close"]] / arr_copy[self.seq_len-1,self.column_index["close"]] - 1.0
         y = log_encode(y)
-
         self.norm_samples.append((x, y))
+        
         
 
     def norm_sample_fun(self,sample):
         rows,_ = sample.shape
         arr_seq = np.array(sample)
+        arr_copy = arr_seq.copy()
         first_day_open_price = arr_seq[0, self.column_index["close"]]
         first_day_self_norm_col_values = [arr_seq[0, self.column_index[col]] for col in self.need_self_normlize_columns if col in self.columns]
         for i in range(rows):
@@ -239,9 +242,10 @@ class StockRegDataSet(data.Dataset):
                     arr_seq[i,self.column_index[col]] = arr_seq[i,self.column_index[col]] / first_day_self_norm_col_values[self.need_self_normlize_columns.index(col)] - 1.0
         x = arr_seq[:self.seq_len]
         y = arr_seq[-1,self.column_index["close"]]
+        # y = arr_copy[-1,self.column_index["close"]] / arr_copy[self.seq_len-1,self.column_index["close"]] - 1.0
         y = log_encode(y)
         return x,y
-
+    
     
     
     def predict_sequences_multiple_dense(self,model,interval):
@@ -291,6 +295,36 @@ class StockRegDataSet(data.Dataset):
                 ground_truth_values.append(y)
         return  ground_truth_values, predicts
     
+    def eval_model(self,model):
+        print("eval model ... ")
+        model.eval()
+        model.cuda()
+        rows,_ = self.stock_df.shape
+        right = 0
+        total = 0
+        gts = []
+        preds = []
+        with torch.no_grad():
+            for i in range(rows - self.sample_need_len):
+                predicted_unnorm_values = []
+                part_stock_df = self.stock_df.iloc[i :i  + self.sample_need_len ,:]
+                input_norm_sample, y = self.norm_sample_fun(part_stock_df)
+                input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32).cuda()
+                out = model(input_tensor).cpu()[0][0].item()
+                out = exp_decode(out)
+                preds.append(out)
+                gts.append(y)
+                if out * y > 0 :
+                    right += 1
+                total += 1
+        acc = right / total   
+        r_sq = rsquare(preds,gts)
+        preds = pd.Series(preds)
+        gts = pd.Series(gts)
+        corr=gts.corr(preds,method='pearson')
+        
+        return  acc,corr,r_sq
+    
     def test_predict(self,model):
         print("predict test predict ... ")
         model.eval()
@@ -336,6 +370,14 @@ class StockRegDataSet(data.Dataset):
         past_real_values = list(need_history_df.iloc[:,self.column_index["close"]].values)
         return past_real_values, predict_outs
             
+def rsquare(x,y):
+    x = np.array(x)
+    y = np.array(y)
+    m_y = np.mean(y)
+    r_sq = 1 - np.sum((y - x)**2) / np.sum((m_y - y)**2)
+    return r_sq
+
+
 if __name__ == "__main__":
     dataset = StockClsDataSet(
                             dataset_type="train",
