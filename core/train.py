@@ -34,6 +34,12 @@ DATASET_LIB = {
     "regression":StockRegDataSet
 }
 
+OPTIMIZER_LIB = {
+    "sgd":torch.optim.SGD,
+    "adam":torch.optim.Adam
+    
+}
+
 def train(dataloader, model, loss_fn, optimizer, log, config):
     size = len(dataloader.dataset)
     model.train()
@@ -139,8 +145,7 @@ def main():
     
     
     loss_fn = LOSS_FUN_LIB[task_type]
-    # optimizer = torch.optim.SGD(model.parameters(), lr=config["optimizer"]["lr"], momentum=0.9)
-    optimizer = torch.optim.Adam(model.parameters(),lr=config["optimizer"]["lr"])
+    optimizer = OPTIMIZER_LIB[config["optimizer"]["name"]](model.parameters(), lr=config["optimizer"]["lr"], momentum=0.9)
     
     num_epoch = config["epoch"]
     # 更新学习率

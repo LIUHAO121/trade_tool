@@ -1,26 +1,27 @@
 {
-    "epoch": 10,
+    "epoch":15,
     "task_type" : "regression",
     "dataset": {
         "train_test_split":0.85,
-        "coloumns":["open","high","low","close"],
-        "seq_len": 49,
-        "pred_len": 1,
+        "coloumns":["open","high","low","close","turnover_rate"],
+        "seq_len": 29,
+        "pred_len": 5,
         "train_dir": "data/train_qfq",
         "test_dir": "data/test_qfq",
         "batch_size": 32,
-        "shuffle": false
+        "shuffle": true
 
     },
     "optimizer":{
+        "name": "sgd",
         "lr":0.001
     },
     "model":{
-        "embed_dim":4,
+        "embed_dim":5,
         "hidden_size":100,
         "rnn_layers":2,
         "output_size":1,
-        "weight":"",
+        "checkpoint":"",
         "weight_dir":"weights",
         "resume":0
     },

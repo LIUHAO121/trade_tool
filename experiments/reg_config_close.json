@@ -13,6 +13,7 @@
 
     },
     "optimizer":{
+        "name": "sgd",
         "lr":0.001
     },
     "model":{
