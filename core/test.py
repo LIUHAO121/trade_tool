@@ -40,6 +40,12 @@ DATASET_LIB = {
     "regression":StockRegDataSet
 }
 
+OPTIMIZER_LIB = {
+    "sgd":torch.optim.SGD,
+    "adam":torch.optim.Adam
+    
+}
+
 def train(dataloader, model, loss_fn, optimizer, log, config):
     size = len(dataloader.dataset)
     model.train()
@@ -122,7 +128,7 @@ def company_train_and_predict(company_name, end_date):
     
     
     loss_fn = LOSS_FUN_LIB[task_type]
-    optimizer = torch.optim.Adam(model.parameters(),lr=config["optimizer"]["lr"])
+    optimizer = OPTIMIZER_LIB[config["optimizer"]["name"]](model.parameters(), lr=config["optimizer"]["lr"], momentum=0.9)
     
     num_epoch = config["epoch"]
 
@@ -142,7 +148,7 @@ def company_train_and_predict(company_name, end_date):
     
     # 4 预测未来走势并可视化
  
-    interval = 15
+    interval = config["plot_interval"]
     past_real_values, future_predicted_multi = train_dataset.test_predict_dense(model=model,
                                                                                 interval=interval,
                                                                                 num_interval=30)
@@ -152,9 +158,9 @@ def company_train_and_predict(company_name, end_date):
                         model_tag="{}_future_predict_dense".format(company_name))
  
 def main():
-    end_date = '20220410'
+    end_date = '20220413'
     # 1 获取股票编码和上市日期
-    company_names = ["科大讯飞","海康威视","汉王科技"]
+    company_names = ["科大讯飞","海康威视","华大基因"]
     for name in company_names:
         print("training {}".format(name))
         company_train_and_predict(company_name=name, end_date=end_date)

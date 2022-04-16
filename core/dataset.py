@@ -351,7 +351,9 @@ class StockRegDataSet(data.Dataset):
         print("predict test predict ... ")
         model.eval()
         model.cuda()
+        rows,_ = self.stock_df.shape
         need_history_df_len = self.seq_len + interval * (num_interval - 1)
+        assert need_history_df_len < rows, "data rows is not enough"
         need_history_df = self.stock_df.iloc[-need_history_df_len:,:]
         predict_outs = []
         for j in range(num_interval):
