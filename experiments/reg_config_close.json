@@ -1,4 +1,5 @@
 {
+    "project_name":"SoftwareService",
     "epoch":15,
     "task_type" : "regression",
     "dataset": {
@@ -21,7 +22,7 @@
         "hidden_size":100,
         "rnn_layers":2,
         "output_size":1,
-        "checkpoint":"",
+        "checkpoint":"weights/SoftwareService_final_model.pth",
         "weight_dir":"weights",
         "resume":0
     },

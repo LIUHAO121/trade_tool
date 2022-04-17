@@ -185,10 +185,9 @@ class StockRegDataSet(data.Dataset):
                 stock_df = stock_df.loc[:,self.columns]
                 train_rows = int(rows * self.split)
                 if self.dataset_type == "train":
-                    stock_df = stock_df.iloc[:train_rows]
-                    rows = train_rows
+                    stock_df = stock_df
+                    rows = rows
                 elif self.dataset_type == "test":
-                    
                     stock_df = stock_df.iloc[train_rows:]
                     rows = rows - train_rows
                 else:

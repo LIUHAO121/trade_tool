@@ -108,8 +108,8 @@ def company_train_and_predict(company_name, end_date):
         coloumns = config["dataset"]["coloumns"],
         seq_len =  config["dataset"]["seq_len"],
         pred_len = config["dataset"]["pred_len"],
-        split= 1.0
-                           )
+        split= 1.0)
+    
     train_dataloader = DataLoader(
         dataset=train_dataset,
         batch_size = config["dataset"]["batch_size"],
@@ -158,9 +158,9 @@ def company_train_and_predict(company_name, end_date):
                         model_tag="{}_future_predict_dense".format(company_name))
  
 def main():
-    end_date = '20220413'
+    end_date = '20220417'
     # 1 获取股票编码和上市日期
-    company_names = ["科大讯飞","海康威视","华大基因"]
+    company_names = ["科大讯飞","海康威视"]
     for name in company_names:
         print("training {}".format(name))
         company_train_and_predict(company_name=name, end_date=end_date)

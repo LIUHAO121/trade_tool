@@ -13,8 +13,8 @@ rm -rf ${test_dir}/*
 # need data
 train_code=(000004 000158 000409 000503 000555 000938 000948 000997 002230 002415)
 # train_code=(002230)
-# test_code=002230
-test_code=000004
+test_code=002230
+# test_code=000004
 
 
 # copy need data

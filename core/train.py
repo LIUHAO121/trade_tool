@@ -81,13 +81,15 @@ def test(dataloader, model, loss_fn,log, config):
         correct /= size
         log.info(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")     
     else:
-       log.info(f"Test Error: \n Avg loss: {test_loss:>8f} \n")   
+       log.info(f"Test Error: \n Avg loss: {test_loss:>8f} \n")  
+    return test_loss 
 
 def main():
     args = parse_args()
     config = load_json(args.cfg)
     task_type = config["task_type"]
     
+    project_name = config["project_name"]
     setup_logging(
         log_dir = config["log_dir"],
         log_level = "INFO",
@@ -154,13 +156,16 @@ def main():
         T_max = num_epoch
         )
 
+    min_loss = 1e3
     for t in range(num_epoch):
         log.info(f"Epoch {t+1}\n-------------------------------")
         train(train_dataloader, model, loss_fn, optimizer, log, config)
-        test(test_dataloader, model, loss_fn, log, config)
+        loss = test(test_dataloader, model, loss_fn, log, config)
         scheduler.step()
-        # torch.save(model.state_dict(), os.path.join(weight_dir,'model_e{}.pth'.format(t)))
-    
+        if loss <= min_loss:
+            min_loss = loss
+            torch.save(model.state_dict(), os.path.join(weight_dir,'{}_e{}_best_model.pth'.format(project_name,t)))
+    torch.save(model.state_dict(), os.path.join(weight_dir,'{}_final_model.pth'.format(project_name,t)))
  
 
     real_values, prediction_seqs = test_dataset.predict_sequences_multiple_dense(model,
