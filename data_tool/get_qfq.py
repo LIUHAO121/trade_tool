@@ -23,11 +23,12 @@ def stock_basic():
 
 def get_qfq(ts_code,start_date,end_date):
     time.sleep(1)
-    df = ts.pro_bar(ts_code=ts_code, adj='qfq', start_date=start_date, end_date=end_date,factors=['tor', 'vr'])
+    df = ts.pro_bar(ts_code=ts_code, adj='qfq',ma=[5,10,15], start_date=start_date, end_date=end_date,factors=['tor', 'vr','m5'])
     return df
 
-def get_all_company_qfq(end_date):
+def get_all_company_qfq(end_date,industry):
     stock_basic_df = stock_basic()
+    stock_basic_df = stock_basic_df[stock_basic_df.loc[:,"industry"]==industry].reset_index()
     rows, cols = stock_basic_df.shape
     for row in tqdm(range(rows)):
         ts_code  = stock_basic_df.loc[row,"ts_code"]
@@ -43,9 +44,9 @@ def get_all_company_qfq(end_date):
         
 
 if __name__ == "__main__":
-    ts_code = '000001.SZ'
-    start_date = '20000101'    
-    end_date = '20220319'
-    get_all_company_qfq(end_date)
+
+    end_date = '20220423'
+    industry = "电器仪表"
+    get_all_company_qfq(end_date,industry)
     
     

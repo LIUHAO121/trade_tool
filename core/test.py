@@ -105,7 +105,7 @@ def company_train_and_predict(company_name, end_date):
     train_dataset = dataset_task(
         dataset_type = "train",
         data_dir = "data/test_train",
-        coloumns = config["dataset"]["coloumns"],
+        columns = config["dataset"]["columns"],
         seq_len =  config["dataset"]["seq_len"],
         pred_len = config["dataset"]["pred_len"],
         split= 1.0)

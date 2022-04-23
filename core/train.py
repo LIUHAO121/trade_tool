@@ -17,7 +17,7 @@ def parse_args():
 
     parser.add_argument('--cfg',
                         help='experiment configure file name',
-                        default="experiments/reg_config_close.json",
+                        default="experiments/reg_config_close_ma5.json",
                         type=str)
     args = parser.parse_args()
 
@@ -104,7 +104,7 @@ def main():
     train_dataset = dataset_task(
         dataset_type = "train",
         data_dir = config["dataset"]["train_dir"],
-        coloumns = config["dataset"]["coloumns"],
+        columns = config["dataset"]["columns"],
         seq_len =  config["dataset"]["seq_len"],
         pred_len = config["dataset"]["pred_len"],
         split= config["dataset"]["train_test_split"]
@@ -119,7 +119,7 @@ def main():
     test_dataset = dataset_task(
         dataset_type = "test",
         data_dir = config["dataset"]["test_dir"],
-        coloumns = config["dataset"]["coloumns"],
+        columns = config["dataset"]["columns"],
         seq_len =  config["dataset"]["seq_len"],
         pred_len = config["dataset"]["pred_len"],
         split = config["dataset"]["train_test_split"]

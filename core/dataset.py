@@ -11,19 +11,7 @@ import matplotlib.pyplot as plt
 
 import math
 
-# def log_encode(y):
-#     y = max(y,-0.99)
-#     return math.log(y + 1)
 
-# def exp_decode(predict):
-#     return math.exp(predict) - 1
-
-def log_encode(y):
-    return y
-
-def exp_decode(predict):
-    return predict
-    
 
 class StockClsDataSet(data.Dataset):
     def __init__(self,dataset_type, data_dir, coloumns, seq_len, pred_len,split=0.8):
@@ -134,10 +122,10 @@ class StockClsDataSet(data.Dataset):
         self.norm_samples.append((arr_seq, y))
     
 class StockRegDataSet(data.Dataset):
-    def __init__(self,dataset_type, data_dir, coloumns, seq_len, pred_len,split=0.8):
+    def __init__(self,dataset_type, data_dir, columns, seq_len, pred_len,split=0.8):
         """
         Args:
-            coloumns (list): 用来预测的指标["open","high","low","close","pre_close","pct_chg","vol","turnover_rate","volume_ratio"]
+            columns (list): 用来预测的指标["open","high","low","close","pre_close","pct_chg","vol","turnover_rate","volume_ratio","ma5"]
                                         [开盘价，最高价，最低价，收盘价，昨日收盘价，价格变化百分比(%)，成交量（手），成交额（千元），换手率（%），量比]
             seq_len (int): 用过去多少天的数据来预测
             pred_len (int): 预测未来几天的收盘价
@@ -148,9 +136,8 @@ class StockRegDataSet(data.Dataset):
         self.seq_len  = seq_len
         self.pred_len = pred_len
         self.sample_need_len = seq_len + pred_len
-        self.need_open_normlize_columns = ["open","high","low","close","pre_close"]
-        self.need_self_normlize_columns = ["vol"]
-        self.columns = coloumns  
+        self.need_close_normlize_columns = ["open","high","low","close","pre_close","ma5"]
+        self.columns = columns  
         self.column_index = {col:num for num,col in enumerate(self.columns)}
         self.norm_samples = multiprocessing.Manager().list()
         self.prepare_samples()  # 将数据拆分成样本,并归一化
@@ -165,7 +152,12 @@ class StockRegDataSet(data.Dataset):
         x,y = self.norm_samples[index]
         x = torch.from_numpy(x).type(torch.float32)
         # 当y为一个单独的元素时，把y放到列表里，保证shape为（batch，1）或（batch，n），而不是（batch，）,交叉墒的y的shape可以是这样
-        y = torch.tensor([y]).type(torch.float32) 
+        if isinstance(y,float):
+            y = torch.tensor([y]).type(torch.float32) 
+        elif isinstance(y, list):
+            y = torch.tensor(y).type(torch.float32)
+        elif isinstance(y,np.ndarray):
+            y = torch.from_numpy(y).type(torch.float32)
         return x,y
     
     def __len__(self):
@@ -208,20 +200,14 @@ class StockRegDataSet(data.Dataset):
         # 以样本的长度为周期计算y
         arr_seq = np.array(sample)
         arr_copy = arr_seq.copy()
-        first_day_open_price = arr_seq[0, self.column_index["close"]]
-        first_day_self_norm_col_values = [arr_seq[0, self.column_index[col]] for col in self.need_self_normlize_columns if col in self.columns]
+        first_day_close_price = arr_seq[0, self.column_index["close"]]
         for i in range(self.sample_need_len):
-            for col in self.need_open_normlize_columns:
+            for col in self.need_close_normlize_columns:
                 if col in self.columns:
-                    arr_seq[i,self.column_index[col]] = arr_seq[i,self.column_index[col]] / first_day_open_price - 1.0
-            for col in self.need_self_normlize_columns:
-                if col in self.columns:
-                    arr_seq[i,self.column_index[col]] = arr_seq[i,self.column_index[col]] / first_day_self_norm_col_values[self.need_self_normlize_columns.index(col)] - 1.0
-        
+                    arr_seq[i,self.column_index[col]] = arr_seq[i,self.column_index[col]] / first_day_close_price - 1.0
         x = arr_seq[:self.seq_len]
-        y = arr_seq[-1,self.column_index["close"]]
-        # y = arr_copy[-1,self.column_index["close"]] / arr_copy[self.seq_len-1,self.column_index["close"]] - 1.0
-        y = log_encode(y)
+        # 输入几维，输出几维
+        y = arr_seq[-1]
         self.norm_samples.append((x, y))
         
         
@@ -230,19 +216,15 @@ class StockRegDataSet(data.Dataset):
         rows,_ = sample.shape
         arr_seq = np.array(sample)
         arr_copy = arr_seq.copy()
-        first_day_open_price = arr_seq[0, self.column_index["close"]]
-        first_day_self_norm_col_values = [arr_seq[0, self.column_index[col]] for col in self.need_self_normlize_columns if col in self.columns]
+        first_day_close_price = arr_seq[0, self.column_index["close"]]
         for i in range(rows):
-            for col in self.need_open_normlize_columns:
+            for col in self.need_close_normlize_columns:
                 if col in self.columns:
-                    arr_seq[i,self.column_index[col]] = arr_seq[i,self.column_index[col]] / first_day_open_price - 1.0
-            for col in self.need_self_normlize_columns:
-                if col in self.columns:
-                    arr_seq[i,self.column_index[col]] = arr_seq[i,self.column_index[col]] / first_day_self_norm_col_values[self.need_self_normlize_columns.index(col)] - 1.0
+                    arr_seq[i,self.column_index[col]] = arr_seq[i,self.column_index[col]] / first_day_close_price - 1.0
+                    
         x = arr_seq[:self.seq_len]
         y = arr_seq[-1,self.column_index["close"]]
-        # y = arr_copy[-1,self.column_index["close"]] / arr_copy[self.seq_len-1,self.column_index["close"]] - 1.0
-        y = log_encode(y)
+
         return x,y
     
     
@@ -264,16 +246,14 @@ class StockRegDataSet(data.Dataset):
                 input_norm_sample,y = self.norm_sample_fun(part_stock_df)     
                 for j in range(self.seq_len):                 
                     input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32).cuda()
-                    
-                    out = model(input_tensor).cpu()[0][0].item()
-                    out = exp_decode(out)
-                    
+                    out = model(input_tensor).cpu()[0].numpy().tolist()
                     input_norm_sample = input_norm_sample[1:]
                     input_norm_sample = np.insert(input_norm_sample, self.seq_len - 1, out, axis=0) 
-                    predicted_unnorm_values.append(out)
+                    predicted_unnorm_values.append(out[0])
                 prediction_seqs.append(predicted_unnorm_values)
     
         return  real_values,prediction_seqs
+    
     
     def predict_point_by_point(self,model):
         print("predict sequences point by point ... ")
@@ -288,9 +268,8 @@ class StockRegDataSet(data.Dataset):
                 part_stock_df = self.stock_df.iloc[i :i  + self.sample_need_len ,:]
                 input_norm_sample, y = self.norm_sample_fun(part_stock_df)
                 input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32).cuda()
-                out = model(input_tensor).cpu()[0][0].item()
-                out = exp_decode(out)
-                predicts.append(out)
+                out = model(input_tensor).cpu()[0].numpy().tolist()
+                predicts.append(out[0])
                 ground_truth_values.append(y)
         return  ground_truth_values, predicts
     
@@ -309,11 +288,10 @@ class StockRegDataSet(data.Dataset):
                 part_stock_df = self.stock_df.iloc[i :i  + self.sample_need_len ,:]
                 input_norm_sample, y = self.norm_sample_fun(part_stock_df)
                 input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32).cuda()
-                out = model(input_tensor).cpu()[0][0].item()
-                out = exp_decode(out)
-                preds.append(out)
+                out = model(input_tensor).cpu()[0].numpy().tolist()
+                preds.append(out[0])
                 gts.append(y)
-                if out * y > 0 :
+                if out[0] * y > 0 :
                     right += 1
                 total += 1
         acc = right / total   
