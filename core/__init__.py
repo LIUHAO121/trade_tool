@@ -1,3 +1,4 @@
-from .dataset import StockClsDataSet,StockRegDataSet
+from .dataset import StockRegDataSet
 from .model import LSTMPred
-from .utils import load_json,setup_logging,get_current_logger,plot_results_multiple, plot_results_point_by_point,plot_points,plot_results_real_multiple_dense,plot_test_out,plot_multi_test_out
+from .utils import load_json,setup_logging,get_current_logger,plot_results_multiple, plot_results_point_by_point,plot_points,plot_results_real_multiple_dense,plot_multi_test_out
+from .backtest import BackTest

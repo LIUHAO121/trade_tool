@@ -5,10 +5,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.optim import lr_scheduler
 import argparse
-from core import LSTMPred, StockClsDataSet ,StockRegDataSet ,load_json,setup_logging,get_current_logger,plot_results_multiple,plot_results_point_by_point,plot_points,plot_results_real_multiple_dense
-
-
-
+from core import LSTMPred ,StockRegDataSet ,load_json,setup_logging,get_current_logger,plot_results_point_by_point,plot_results_real_multiple_dense
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -18,6 +15,10 @@ def parse_args():
     parser.add_argument('--cfg',
                         help='experiment configure file name',
                         default="experiments/reg_config_close_ma5.json",
+                        type=str)
+    parser.add_argument('--ts_code',
+                        help='the test stock code',
+                        default="002230",
                         type=str)
     args = parser.parse_args()
 
@@ -30,7 +31,6 @@ LOSS_FUN_LIB = {
                }
 
 DATASET_LIB = {
-    "classification": StockClsDataSet,
     "regression":StockRegDataSet
 }
 
@@ -149,6 +149,9 @@ def main():
     loss_fn = LOSS_FUN_LIB[task_type]
     optimizer = OPTIMIZER_LIB[config["optimizer"]["name"]](model.parameters(), lr=config["optimizer"]["lr"], momentum=0.9)
     
+    cols = config["dataset"]["columns"]
+    input_feats = "_".join(cols)
+    model_tags = "{}_SeqLen_{}_Emb_{}".format(args.ts_code, config['dataset']['seq_len'], input_feats)
     num_epoch = config["epoch"]
     # 更新学习率
     scheduler = lr_scheduler.CosineAnnealingLR(
@@ -157,15 +160,16 @@ def main():
         )
 
     min_loss = 1e3
+    
     for t in range(num_epoch):
         log.info(f"Epoch {t+1}\n-------------------------------")
         train(train_dataloader, model, loss_fn, optimizer, log, config)
         loss = test(test_dataloader, model, loss_fn, log, config)
         scheduler.step()
-        if loss <= min_loss:
-            min_loss = loss
-            torch.save(model.state_dict(), os.path.join(weight_dir,'{}_e{}_best_model.pth'.format(project_name,t)))
-    torch.save(model.state_dict(), os.path.join(weight_dir,'{}_final_model.pth'.format(project_name,t)))
+        # if loss <= min_loss:
+        #    min_loss = loss
+        #    torch.save(model.state_dict(), os.path.join(weight_dir,'{}_{}_best.pth'.format(project_name,model_tags)))
+    torch.save(model.state_dict(), os.path.join(weight_dir,'{}_{}_epoch_{}.pth'.format(project_name,model_tags,num_epoch)))
  
 
     real_values, prediction_seqs = test_dataset.predict_sequences_multiple_dense(model,

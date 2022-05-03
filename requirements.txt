@@ -1,0 +1,4 @@
+numpy==1.21.5
+pandas
+torch==1.8.1
+tushare==1.2.84

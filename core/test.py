@@ -8,7 +8,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.optim import lr_scheduler
 from data_tool import get_qfq
-from core import LSTMPred, StockClsDataSet ,StockRegDataSet ,load_json, setup_logging, get_current_logger,plot_test_out,plot_multi_test_out
+from core import LSTMPred,StockRegDataSet ,load_json, setup_logging, get_current_logger,plot_multi_test_out
 
 
 
@@ -36,7 +36,6 @@ LOSS_FUN_LIB = {
                }
 
 DATASET_LIB = {
-    "classification": StockClsDataSet,
     "regression":StockRegDataSet
 }
 
@@ -104,7 +103,7 @@ def company_train_and_predict(company_name, end_date):
     dataset_task = DATASET_LIB[task_type]
     train_dataset = dataset_task(
         dataset_type = "train",
-        data_dir = "data/test_train",
+        data_dir = data_dir,
         columns = config["dataset"]["columns"],
         seq_len =  config["dataset"]["seq_len"],
         pred_len = config["dataset"]["pred_len"],
@@ -152,13 +151,14 @@ def company_train_and_predict(company_name, end_date):
     past_real_values, future_predicted_multi = train_dataset.test_predict_dense(model=model,
                                                                                 interval=interval,
                                                                                 num_interval=30)
+    print(future_predicted_multi)
     plot_multi_test_out(predicted_datas=future_predicted_multi,
                         real_values=past_real_values,
                         interval=interval,
                         model_tag="{}_future_predict_dense".format(company_name))
  
 def main():
-    end_date = '20220417'
+    end_date = '20220430'
     # 1 获取股票编码和上市日期
     company_names = ["科大讯飞","海康威视"]
     for name in company_names:
