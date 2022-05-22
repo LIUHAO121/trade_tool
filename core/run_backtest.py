@@ -43,7 +43,7 @@ def main():
     ts_code = args.ts_code
     end_date = args.end_date
     
-    log = logging.getLogger(__name__)
+    log = logging.getLogger("backtest")
     log.setLevel(level = logging.INFO)
     handler = logging.FileHandler("{}/backtest_{}_{}.txt".format(config["log_dir"],ts_code, dt.datetime.now().strftime('%Y%m%d-%H%M%S')))
     handler.setLevel(logging.INFO)
@@ -52,10 +52,8 @@ def main():
     log.addHandler(handler)
     log.info("back test {}".format(ts_code))
     
-    
     data_dir = config["backtest"]["data_dir"]
     
-
     stock_basic = pd.read_csv("data/stock_basic.csv") 
     list_date = stock_basic[stock_basic["ts_code"]==ts_code]["list_date"].values[0]
     for csv_file in os.listdir(data_dir):
@@ -86,7 +84,6 @@ def main():
                                 model = model,
                                 dataset=train_dataset)
     backtest_engine.run(log=log)
-    # backtest_engine.run_ma(log=log)
     
     
 if __name__ == "__main__":

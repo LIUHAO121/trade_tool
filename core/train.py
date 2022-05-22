@@ -160,18 +160,19 @@ def main():
         )
 
     min_loss = 1e3
-    
+    best_model_path = os.path.join(weight_dir,'{}_{}_best.pth'.format(project_name,model_tags))
+    final_model_path = os.path.join(weight_dir,'{}_{}_epoch_{}.pth'.format(project_name,model_tags,num_epoch))
     for t in range(num_epoch):
         log.info(f"Epoch {t+1}\n-------------------------------")
         train(train_dataloader, model, loss_fn, optimizer, log, config)
         loss = test(test_dataloader, model, loss_fn, log, config)
         scheduler.step()
-        # if loss <= min_loss:
-        #    min_loss = loss
-        #    torch.save(model.state_dict(), os.path.join(weight_dir,'{}_{}_best.pth'.format(project_name,model_tags)))
-    torch.save(model.state_dict(), os.path.join(weight_dir,'{}_{}_epoch_{}.pth'.format(project_name,model_tags,num_epoch)))
+        if loss <= min_loss:
+           min_loss = loss
+           torch.save(model.state_dict(), best_model_path)
+    torch.save(model.state_dict(),final_model_path)
  
-
+    model.load_state_dict(torch.load(best_model_path))
     real_values, prediction_seqs = test_dataset.predict_sequences_multiple_dense(model,
                                                                                  interval=config["plot_interval"])
     plot_results_real_multiple_dense(predicted_data=prediction_seqs,

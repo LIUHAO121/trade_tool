@@ -38,7 +38,7 @@ def get_current_logger():
 
   
 
-def plot_multi_test_out(predicted_datas, real_values, interval, model_tag):
+def plot_multi_test_out(predicted_datas, real_values, interval, model_tag,plot_out_dir):
     fig = plt.figure(facecolor='white')
     ax = fig.add_subplot(111)
     ax.plot(real_values, label='True Data')
@@ -52,7 +52,7 @@ def plot_multi_test_out(predicted_datas, real_values, interval, model_tag):
         adjust_predict = [(i+1)*base_value for i in predicted_data]
         plt.plot(padding + adjust_predict, label='Prediction')
     
-    plt.savefig("log/img/{}.png".format(model_tag))
+    plt.savefig("{}/{}.png".format(plot_out_dir,model_tag))
     
 
     
