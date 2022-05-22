@@ -1,5 +1,16 @@
 # trade_tool
 
+### env
+
+```
+pip install -r requirements.txt
+mkdir log weights
+mkdir data/test_qfq data/test_train data/train_qfq
+```
+
+mkdir log weights
+
+
 ### train
 
 训练某只股票的时序模型
