@@ -1,5 +1,8 @@
 *.csv
-/data/*
+/data/qfq/*.csv
+/data/test_qfq/*.csv
+/data/test_train/*.csv
+/data/train_qfq/*.csv
 *.pyc
 /log/*
 /weights/*pth

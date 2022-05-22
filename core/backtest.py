@@ -106,28 +106,26 @@ class BackTest(object):
             return BUY
         else:
             return SELL
-        
-    def run_ma(self,log):
+    
+  
+    def run_double_ma(self,log,short_average="ma5",long_average="ma15"):
         rows,_ = self.dataset.stock_df.shape
         seq_len = 2
         judge_times = rows - seq_len # 预测完最后一天就停止
         for i in range(judge_times):
             op_signal=None
-            close_1 = self.dataset.original_stock_df.loc[i,"close"]
-            ma_1 = self.dataset.original_stock_df.loc[i,"ma10"]
-            close_2 = self.dataset.original_stock_df.loc[i+1,"close"]
-            ma_2 = self.dataset.original_stock_df.loc[i+1,"ma10"]
-            if close_1 < ma_1 and close_2 > ma_2:
+            short_1 = self.dataset.original_stock_df.loc[i,short_average]
+            long_1 = self.dataset.original_stock_df.loc[i,long_average]
+            short_2 = self.dataset.original_stock_df.loc[i+1,short_average]
+            long_2 = self.dataset.original_stock_df.loc[i+1,long_average]
+            if short_1 < long_1 and short_2 > long_2:
                 op_signal = BUY
-            elif close_1 > ma_1 and close_2 < ma_2:
-                op_signal = SELL
-            elif close_1 < ma_1 and close_2 < ma_2:
+            elif short_1 > long_1 and short_2 < long_2:
                 op_signal = SELL
             else:
-                op_signal = BUY
+                op_signal = KEEP
             
             self.op_signal = op_signal
             self.after_signal(op_signal, timestamp=i+seq_len) # 用前N天的数据，为第N+1天做判断
             log_info = "timestamp:{}, op:{}, wallet:{:.2f}, market_value:{:.2f}, keep_num:{}, close:{:.2f}".format(i+seq_len,op2string[self.op_signal],self.wallet,self.market_value,self.keep_number,self.current_close_price)
-            log.info(log_info)    
-        
+            log.info(log_info) 

@@ -25,6 +25,10 @@ def parse_args():
                         help='experiment configure file name',
                         default="experiments/reg_config_close.json",
                         type=str)
+    parser.add_argument('--ts_code',
+                        help='the test stock code',
+                        default="002415",
+                        type=str)
     args = parser.parse_args()
 
     return args
@@ -69,8 +73,17 @@ def train(dataloader, model, loss_fn, optimizer, log, config):
                 log.info(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}] ")
  
  
-def company_train_and_predict(company_name, end_date):
+def company_train_and_predict(end_date):
+    args = parse_args()
+    config = load_json(args.cfg)
+
     stock_basic = pd.read_csv("data/stock_basic.csv") 
+    ts_code = args.ts_code
+    if ts_code[0] != '6':
+        ts_code = ts_code + ".SZ"
+    else:
+        ts_code = ts_code + ".SH"
+    company_name = stock_basic[stock_basic["ts_code"]==ts_code]["name"].values[0]
     ts_code = stock_basic[stock_basic["name"]==company_name]["ts_code"].values[0]
     list_date = stock_basic[stock_basic["name"]==company_name]["list_date"].values[0]
     
@@ -83,14 +96,12 @@ def company_train_and_predict(company_name, end_date):
     train_df.to_csv("{}/{}_{}.csv".format(data_dir,ts_code,end_date))
     
     # 3 训练并保存模型
-    args = parse_args()
-    config = load_json(args.cfg)
     task_type = config["task_type"]
     
 
     log = logging.getLogger(__name__)
     log.setLevel(level = logging.INFO)
-    handler = logging.FileHandler("{}/log/{}_{}.txt".format(config["log_dir"],company_name, dt.datetime.now().strftime('%Y%m%d-%H%M%S')))
+    handler = logging.FileHandler("{}/{}_{}.txt".format(config["log_dir"],company_name, dt.datetime.now().strftime('%Y%m%d-%H%M%S')))
     handler.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
@@ -151,19 +162,17 @@ def company_train_and_predict(company_name, end_date):
     past_real_values, future_predicted_multi = train_dataset.test_predict_dense(model=model,
                                                                                 interval=interval,
                                                                                 num_interval=30)
-    print(future_predicted_multi)
     plot_multi_test_out(predicted_datas=future_predicted_multi,
                         real_values=past_real_values,
                         interval=interval,
-                        model_tag="{}_future_predict_dense".format(company_name))
+                        model_tag="{}_future_predict_dense".format(company_name),
+                        plot_out_dir="log"
+                        )
  
 def main():
     end_date = '20220430'
-    # 1 获取股票编码和上市日期
-    company_names = ["科大讯飞","海康威视"]
-    for name in company_names:
-        print("training {}".format(name))
-        company_train_and_predict(company_name=name, end_date=end_date)
+    
+    company_train_and_predict( end_date=end_date)
     
     
         

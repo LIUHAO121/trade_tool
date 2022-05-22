@@ -4,7 +4,7 @@
     "task_type" : "regression",
     "dataset": {
         "train_test_split":0.85,
-        "columns":["close","ma5"],
+        "columns":["close","ma15","turnover_rate"],
         "seq_len": 29,
         "pred_len": 1,
         "train_dir": "data/train_qfq",
@@ -18,11 +18,11 @@
         "lr":0.001
     },
     "model":{
-        "embed_dim":2,
+        "embed_dim":3,
         "hidden_size":100,
         "rnn_layers":2,
-        "output_size":2,
-        "checkpoint":"weights/SoftwareService_002230_SeqLen_29_Emb_close_ma5_epoch_13.pth",
+        "output_size":3,
+        "checkpoint":"weights/SoftwareService_002415_SeqLen_29_Emb_close_ma15_turnover_rate_epoch_11.pth",
         "weight_dir":"weights",
         "resume":0
     },
