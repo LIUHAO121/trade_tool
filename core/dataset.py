@@ -84,7 +84,7 @@ class StockRegDataSet(data.Dataset):
         
         
     def multiprocess_normalize_samples(self,samples):
-        with Pool(40) as p:
+        with Pool(5) as p:
             p.map(self.normalize_sample,samples)
 
         
@@ -133,11 +133,11 @@ class StockRegDataSet(data.Dataset):
     
     def predict_one_sample(self,model,sample):
         model.eval()
-        model.cuda()
+        # model.cuda()
         input_norm_sample,_ = self.norm_sample_fun(sample)
         predict_out = []
         for i in range(self.seq_len):
-            input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32).cuda()
+            input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32)
             out = model(input_tensor).cpu()[0].detach().numpy().tolist()
             input_norm_sample = input_norm_sample[1:]
             insert_index = self.seq_len - 1
@@ -149,7 +149,7 @@ class StockRegDataSet(data.Dataset):
     def predict_sequences_multiple_dense(self,model,interval):
         print("predict sequences multiple dense ... ")
         model.eval()
-        model.cuda()
+        # model.cuda()
         rows,_ = self.stock_df.shape
         pred_nums = int((rows - self.sample_need_len)/interval) + 1
         prediction_seqs = []
@@ -162,7 +162,7 @@ class StockRegDataSet(data.Dataset):
                 part_stock_df = self.stock_df.iloc[start_point:start_point + self.sample_need_len, :]
                 input_norm_sample,y = self.norm_sample_fun(part_stock_df)     
                 for j in range(self.seq_len):                 
-                    input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32).cuda()
+                    input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32)
                     out = model(input_tensor).cpu()[0].numpy().tolist()
                     input_norm_sample = input_norm_sample[1:]
                     input_norm_sample = np.insert(input_norm_sample, self.seq_len - 1, out, axis=0) 
@@ -175,7 +175,7 @@ class StockRegDataSet(data.Dataset):
     def predict_point_by_point(self,model):
         print("predict sequences point by point ... ")
         model.eval()
-        model.cuda()
+        # model.cuda()
         rows,_ = self.stock_df.shape
         predicts = []
         ground_truth_values = []
@@ -184,7 +184,7 @@ class StockRegDataSet(data.Dataset):
                 predicted_unnorm_values = []
                 part_stock_df = self.stock_df.iloc[i :i  + self.sample_need_len ,:]
                 input_norm_sample, y = self.norm_sample_fun(part_stock_df)
-                input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32).cuda()
+                input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32)
                 out = model(input_tensor).cpu()[0].numpy().tolist()
                 predicts.append(out[0])
                 ground_truth_values.append(y)
@@ -193,7 +193,7 @@ class StockRegDataSet(data.Dataset):
     def eval_model(self,model):
         print("eval model ... ")
         model.eval()
-        model.cuda()
+        # model.cuda()
         rows,_ = self.stock_df.shape
         right = 0
         total = 0
@@ -204,7 +204,7 @@ class StockRegDataSet(data.Dataset):
                 predicted_unnorm_values = []
                 part_stock_df = self.stock_df.iloc[i :i  + self.sample_need_len ,:]
                 input_norm_sample, y = self.norm_sample_fun(part_stock_df)
-                input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32).cuda()
+                input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32)
                 out = model(input_tensor).cpu()[0].numpy().tolist()
                 preds.append(out[0])
                 gts.append(y)
@@ -227,7 +227,7 @@ class StockRegDataSet(data.Dataset):
         """
         print("predict test predict ... ")
         model.eval()
-        model.cuda()
+        # model.cuda()
         rows,_ = self.stock_df.shape
         need_history_df_len = self.seq_len + interval * (num_interval - 1)
         assert need_history_df_len < rows, "data rows is not enough"
@@ -238,7 +238,7 @@ class StockRegDataSet(data.Dataset):
             input_norm_sample,y = self.norm_sample_fun(part_df)
             predict_out = []
             for i in range(self.seq_len):
-                input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32).cuda()
+                input_tensor = torch.from_numpy(input_norm_sample[np.newaxis,:,:]).type(torch.float32)
                 out = model(input_tensor).cpu()[0].detach().numpy().tolist()
                 input_norm_sample = input_norm_sample[1:]
                 insert_index = self.seq_len - 1

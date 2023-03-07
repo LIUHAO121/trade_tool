@@ -1,11 +1,11 @@
 {
     "project_name":"SoftwareService",
-    "epoch":11,
+    "epoch":2,
     "task_type" : "regression",
     "dataset": {
         "train_test_split":0.85,
-        "columns":["close","ma15"],
-        "seq_len": 49,
+        "columns":["close","ma5"],
+        "seq_len": 29,
         "pred_len": 1,
         "train_dir": "data/train_qfq",
         "test_dir": "data/test_qfq",

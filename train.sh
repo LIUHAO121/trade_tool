@@ -28,6 +28,6 @@ echo "cp test data ..."
 cp ${src_dir}/${test_code}* $test_dir
 echo "cp ${test_code} to ${test_dir}"
 
-# python core/train.py --cfg experiments/reg_config_close.json --ts_code $test_code
-# python core/train.py --cfg experiments/reg_config_close_ma.json --ts_code $test_code
-python core/train.py --cfg experiments/reg_config_close_ma_tr.json --ts_code $test_code
+# python core/train.py --cfg config/reg_config_close.json --ts_code $test_code
+# python core/train.py --cfg config/reg_config_close_ma.json --ts_code $test_code
+python core/train.py --cfg config/reg_config_close_ma_tr.json --ts_code $test_code

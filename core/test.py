@@ -23,7 +23,7 @@ def parse_args():
 
     parser.add_argument('--cfg',
                         help='experiment configure file name',
-                        default="experiments/reg_config_close.json",
+                        default="config/reg_config_close.json",
                         type=str)
     parser.add_argument('--ts_code',
                         help='the test stock code',
